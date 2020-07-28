@@ -26,6 +26,6 @@ RUN set -ex \
 COPY cmd/registry/config-dev.yml /etc/docker/registry/config.yml
 COPY --from=build /go/src/github.com/docker/distribution/bin/registry /bin/registry
 VOLUME ["/var/lib/registry"]
-EXPOSE 5000
+EXPOSE 5555
 ENTRYPOINT ["registry"]
 CMD ["serve", "/etc/docker/registry/config.yml"]
