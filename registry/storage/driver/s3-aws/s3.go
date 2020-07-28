@@ -86,6 +86,7 @@ var validObjectACLs = map[string]struct{}{}
 type DriverParameters struct {
 	AccessKey                   string
 	SecretKey                   string
+	SessionToken                string
 	Bucket                      string
 	Region                      string
 	RegionEndpoint              string
@@ -102,7 +103,6 @@ type DriverParameters struct {
 	StorageClass                string
 	UserAgent                   string
 	ObjectACL                   string
-	SessionToken                string
 }
 
 func init() {
@@ -179,6 +179,10 @@ func FromParameters(parameters map[string]interface{}) (*Driver, error) {
 	secretKey := parameters["secretkey"]
 	if secretKey == nil {
 		secretKey = ""
+	}
+	sessionToken := parameters["sessiontoken"]
+	if sessionToken == nil {
+		sessionToken = ""
 	}
 
 	regionEndpoint := parameters["regionendpoint"]
@@ -339,11 +343,10 @@ func FromParameters(parameters map[string]interface{}) (*Driver, error) {
 		objectACL = objectACLString
 	}
 
-	sessionToken := ""
-
 	params := DriverParameters{
 		fmt.Sprint(accessKey),
 		fmt.Sprint(secretKey),
+		fmt.Sprint(sessionToken),
 		fmt.Sprint(bucket),
 		region,
 		fmt.Sprint(regionEndpoint),
@@ -360,7 +363,6 @@ func FromParameters(parameters map[string]interface{}) (*Driver, error) {
 		storageClass,
 		fmt.Sprint(userAgent),
 		objectACL,
-		fmt.Sprint(sessionToken),
 	}
 
 	return New(params)

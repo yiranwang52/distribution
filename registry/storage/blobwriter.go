@@ -164,8 +164,8 @@ func (bw *blobWriter) Close() error {
 // does not match. The canonical descriptor is returned.
 func (bw *blobWriter) validateBlob(ctx context.Context, desc distribution.Descriptor) (distribution.Descriptor, error) {
 	var (
-		verified, fullHash bool
-		canonical          digest.Digest
+		//verified, fullHash bool
+		//canonical          digest.Digest
 	)
 
 	if desc.Digest == "" {
@@ -211,76 +211,76 @@ func (bw *blobWriter) validateBlob(ctx context.Context, desc distribution.Descri
 	// TODO(stevvooe): This section is very meandering. Need to be broken down
 	// to be a lot more clear.
 
-	if err := bw.resumeDigest(ctx); err == nil {
-		canonical = bw.digester.Digest()
+	// if err := bw.resumeDigest(ctx); err == nil {
+	// 	canonical = bw.digester.Digest()
 
-		if canonical.Algorithm() == desc.Digest.Algorithm() {
-			// Common case: client and server prefer the same canonical digest
-			// algorithm - currently SHA256.
-			verified = desc.Digest == canonical
-		} else {
-			// The client wants to use a different digest algorithm. They'll just
-			// have to be patient and wait for us to download and re-hash the
-			// uploaded content using that digest algorithm.
-			fullHash = true
-		}
-	} else if err == errResumableDigestNotAvailable {
-		// Not using resumable digests, so we need to hash the entire layer.
-		fullHash = true
-	} else {
-		return distribution.Descriptor{}, err
-	}
+	// 	if canonical.Algorithm() == desc.Digest.Algorithm() {
+	// 		// Common case: client and server prefer the same canonical digest
+	// 		// algorithm - currently SHA256.
+	// 		verified = desc.Digest == canonical
+	// 	} else {
+	// 		// The client wants to use a different digest algorithm. They'll just
+	// 		// have to be patient and wait for us to download and re-hash the
+	// 		// uploaded content using that digest algorithm.
+	// 		fullHash = true
+	// 	}
+	// } else if err == errResumableDigestNotAvailable {
+	// 	// Not using resumable digests, so we need to hash the entire layer.
+	// 	fullHash = true
+	// } else {
+	// 	return distribution.Descriptor{}, err
+	// }
 
-	if fullHash {
-		// a fantastic optimization: if the the written data and the size are
-		// the same, we don't need to read the data from the backend. This is
-		// because we've written the entire file in the lifecycle of the
-		// current instance.
-		if bw.written == size && digest.Canonical == desc.Digest.Algorithm() {
-			canonical = bw.digester.Digest()
-			verified = desc.Digest == canonical
-		}
+	// if fullHash {
+	// 	// a fantastic optimization: if the the written data and the size are
+	// 	// the same, we don't need to read the data from the backend. This is
+	// 	// because we've written the entire file in the lifecycle of the
+	// 	// current instance.
+	// 	if bw.written == size && digest.Canonical == desc.Digest.Algorithm() {
+	// 		canonical = bw.digester.Digest()
+	// 		verified = desc.Digest == canonical
+	// 	}
 
-		// If the check based on size fails, we fall back to the slowest of
-		// paths. We may be able to make the size-based check a stronger
-		// guarantee, so this may be defensive.
-		if !verified {
-			digester := digest.Canonical.Digester()
-			verifier := desc.Digest.Verifier()
+	// 	// If the check based on size fails, we fall back to the slowest of
+	// 	// paths. We may be able to make the size-based check a stronger
+	// 	// guarantee, so this may be defensive.
+	// 	if !verified {
+	// 		digester := digest.Canonical.Digester()
+	// 		verifier := desc.Digest.Verifier()
 
-			// Read the file from the backend driver and validate it.
-			fr, err := newFileReader(ctx, bw.driver, bw.path, desc.Size)
-			if err != nil {
-				return distribution.Descriptor{}, err
-			}
-			defer fr.Close()
+	// 		// Read the file from the backend driver and validate it.
+	// 		fr, err := newFileReader(ctx, bw.driver, bw.path, desc.Size)
+	// 		if err != nil {
+	// 			return distribution.Descriptor{}, err
+	// 		}
+	// 		defer fr.Close()
 
-			tr := io.TeeReader(fr, digester.Hash())
+	// 		tr := io.TeeReader(fr, digester.Hash())
 
-			if _, err := io.Copy(verifier, tr); err != nil {
-				return distribution.Descriptor{}, err
-			}
+	// 		if _, err := io.Copy(verifier, tr); err != nil {
+	// 			return distribution.Descriptor{}, err
+	// 		}
 
-			canonical = digester.Digest()
-			verified = verifier.Verified()
-		}
-	}
+	// 		canonical = digester.Digest()
+	// 		verified = verifier.Verified()
+	// 	}
+	// }
 
-	if !verified {
-		dcontext.GetLoggerWithFields(ctx,
-			map[interface{}]interface{}{
-				"canonical": canonical,
-				"provided":  desc.Digest,
-			}, "canonical", "provided").
-			Errorf("canonical digest does match provided digest")
-		return distribution.Descriptor{}, distribution.ErrBlobInvalidDigest{
-			Digest: desc.Digest,
-			Reason: fmt.Errorf("content does not match digest"),
-		}
-	}
+	// if !verified {
+	// 	dcontext.GetLoggerWithFields(ctx,
+	// 		map[interface{}]interface{}{
+	// 			"canonical": canonical,
+	// 			"provided":  desc.Digest,
+	// 		}, "canonical", "provided").
+	// 		Errorf("canonical digest does match provided digest")
+	// 	return distribution.Descriptor{}, distribution.ErrBlobInvalidDigest{
+	// 		Digest: desc.Digest,
+	// 		Reason: fmt.Errorf("content does not match digest"),
+	// 	}
+	// }
 
-	// update desc with canonical hash
-	desc.Digest = canonical
+	// // update desc with canonical hash
+	// desc.Digest = canonical
 
 	if desc.MediaType == "" {
 		desc.MediaType = "application/octet-stream"
